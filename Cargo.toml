@@ -1,0 +1,25 @@
+[package]
+name = "vlfo"
+version = "0.1.0"
+edition = "2021"
+description = "video LFO: ISF shader layers driven from Pure Data over OSC, live or offline"
+license = "MIT"
+
+[dependencies]
+wgpu = { version = "26", features = ["glsl", "naga-ir"] }
+naga = { version = "26", features = ["glsl-in", "wgsl-out"] }
+winit = "0.30"
+pollster = "0.4"
+rosc = "0.11"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+bytemuck = "1"
+png = "0.17"
+env_logger = "0.11"
+log = "0.4"
+libloading = "0.8"
+
+[profile.release]
+debug = 1
