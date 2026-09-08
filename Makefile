@@ -38,9 +38,10 @@ pd:
 	$(PD) $(PDFLAGS) -path pd $(PATCH)
 
 live: build
-	@trap 'kill 0' INT TERM EXIT; \
-	$(BIN) run $(SHADER) --size $(SIZE) --port $(PORT) & \
-	sleep 1; $(PD) $(PDFLAGS) -path pd $(PATCH)
+	@$(BIN) run $(SHADER) --size $(SIZE) --port $(PORT) & V=$$!; \
+	sleep 1; $(PD) $(PDFLAGS) -path pd $(PATCH) & P=$$!; \
+	trap 'kill $$V $$P 2>/dev/null; wait $$V $$P 2>/dev/null' INT TERM EXIT; \
+	while kill -0 $$V 2>/dev/null && kill -0 $$P 2>/dev/null; do sleep 0.5; done
 
 render: build
 	$(BIN) render $(SHADER) -o $(OUT) --frames $(FRAMES) --fps $(FPS) --size $(SIZE)
