@@ -34,6 +34,10 @@ impl Output {
         Ok(Output { target, pipe, ndi, frame: 0 })
     }
 
+    pub fn set_pipeline(&mut self, pipe: IsfPipeline) {
+        self.pipe = pipe;
+    }
+
     pub fn wants_readback(&self) -> bool {
         self.ndi.is_some()
     }

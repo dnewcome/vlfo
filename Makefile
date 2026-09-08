@@ -2,9 +2,12 @@
 #
 #   make            build (release)
 #   make run        live window with the test shader, OSC on udp 9000
-#   make pd         open the Pd control patch (PATCH, default pd/lfo-test.pd)
+#   make panel      generate a Pd control panel from the shader's inputs (pd/panels/)
+#   make pd         open the Pd control patch (PATCH, default: the generated panel)
 #   make live       pd + run together; Ctrl-C stops both
 #                   e.g. make live SHADER=shaders/squares.fs PATCH=pd/squares.pd
+#                        make live SHADER=shaders/isf-files/Angular.fs   (auto panel)
+#   shaders reload live when the file changes (run and serve)
 #   make render     headless PNG sequence -> out/render
 #   make check      naga translation report over the ISF corpus
 #   make inputs     list the shader's inputs and OSC addresses
@@ -14,7 +17,9 @@
 #   make render SIZE=4800x7200 FRAMES=300 OUT=out/big
 
 SHADER ?= shaders/vlfo-test.fs
-PATCH  ?= pd/lfo-test.pd
+# control patch: default is a panel generated from the shader's ISF inputs
+PANEL   = pd/panels/$(basename $(notdir $(SHADER))).pd
+PATCH  ?= $(PANEL)
 PDFLAGS ?= -noaudio
 PDOPEN  = -open $(PATCH)
 SIZE   ?= 1280x720
@@ -25,7 +30,7 @@ OUT    ?= out/render
 BIN    := target/release/vlfo
 PD     ?= pd
 
-.PHONY: all build run pd live render realtime check inputs corpus clean
+.PHONY: all build run pd live panel render realtime check inputs corpus clean
 
 all: build
 
@@ -35,10 +40,16 @@ build:
 run: build
 	$(BIN) run $(SHADER) --size $(SIZE) --port $(PORT)
 
-pd:
+pd/panels/%.pd: build
+	@mkdir -p pd/panels
+	$(BIN) inputs --pd $(SHADER) --port $(PORT) > $@
+
+panel: $(PANEL)
+
+pd: $(PATCH)
 	$(PD) $(PDFLAGS) -path pd $(PDOPEN)
 
-live: build
+live: build $(PATCH)
 	@$(BIN) run $(SHADER) --size $(SIZE) --port $(PORT) & V=$$!; \
 	sleep 1; $(PD) $(PDFLAGS) -path pd $(PDOPEN) & P=$$!; \
 	trap 'kill $$V $$P 2>/dev/null; wait $$V $$P 2>/dev/null' INT TERM EXIT; \

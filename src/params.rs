@@ -57,6 +57,22 @@ impl Params {
         p
     }
 
+    /// New store for a (re)loaded shader, keeping values of inputs that still
+    /// exist with the same kind.
+    pub fn migrate(&self, isf: &Isf, layout: Layout) -> Params {
+        let mut new = Params::new(isf, layout);
+        for slot in new.layout.slots.clone() {
+            if let Some(old) = self.slot(&slot.name) {
+                if old.kind == slot.kind {
+                    let n = slot.kind.size();
+                    let bytes = self.data[old.offset..old.offset + n].to_vec();
+                    new.data[slot.offset..slot.offset + n].copy_from_slice(&bytes);
+                }
+            }
+        }
+        new
+    }
+
     pub fn slot(&self, name: &str) -> Option<&Slot> {
         self.by_name.get(name).map(|i| &self.layout.slots[*i])
     }

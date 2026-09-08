@@ -30,6 +30,17 @@ Every ISF input is reachable as `/vlfo/<NAME>` with floats (or ints/bools). Colo
 Rendering is deterministic: logical time is `frame / fps`, so a 4800x7200 render is
 just slower, never sped up.
 
+## Tweaking shaders like a patch
+
+Every ISF input is a knob. `vlfo inputs --pd shader.fs > panel.pd` writes a Pd control
+panel with a box per input (number boxes, toggles, bangs, packed colours and points),
+already wired to `[vlfo/param]`; `make live SHADER=...` generates it automatically into
+`pd/panels/` when no PATCH is given.
+
+Shaders reload live: `run` and `serve` watch the shader file and rebuild it on save,
+keeping the current input values. A shader that fails to compile is reported and the
+previous one keeps running.
+
 ## Porting GEM / glfo scenes
 
 The Pd side of a scene stays in Pd; only the drawing becomes an ISF shader.

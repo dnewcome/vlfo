@@ -1,10 +1,12 @@
 mod gpu;
+mod hot;
 mod isf;
 mod ndi;
 mod offscreen;
 mod osc;
 mod output;
 mod params;
+mod pdgen;
 mod window;
 
 use std::path::PathBuf;
@@ -89,7 +91,15 @@ enum Cmd {
         port: u16,
     },
     /// List an ISF shader's inputs and their OSC addresses.
-    Inputs { shader: PathBuf },
+    Inputs {
+        shader: PathBuf,
+        /// Emit a Pure Data control panel patch instead (redirect to a .pd file)
+        #[arg(long)]
+        pd: bool,
+        /// OSC port the generated panel sends to
+        #[arg(long, default_value_t = 9000)]
+        port: u16,
+    },
     /// Translate ISF files through naga and report which ones compile.
     Check {
         files: Vec<PathBuf>,
@@ -114,7 +124,7 @@ fn load(path: &PathBuf) -> Result<isf::Isf> {
     isf::parse(&src).with_context(|| format!("parse {}", path.display()))
 }
 
-fn print_inputs(isf: &isf::Isf) {
+pub fn print_inputs(isf: &isf::Isf) {
     if !isf.description.is_empty() {
         println!("{}", isf.description);
     }
@@ -137,8 +147,14 @@ fn main() -> Result<()> {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("vlfo=info")).init();
     let cli = Cli::parse();
     match cli.cmd {
-        Cmd::Inputs { shader } => {
-            print_inputs(&load(&shader)?);
+        Cmd::Inputs { shader, pd, port } => {
+            let isf = load(&shader)?;
+            if pd {
+                let title = shader.file_name().unwrap_or_default().to_string_lossy().into_owned();
+                print!("{}", pdgen::generate(&isf, &title, port));
+            } else {
+                print_inputs(&isf);
+            }
         }
         Cmd::Check { files, wgsl, glsl } => check(&files, wgsl, glsl)?,
         Cmd::TranslateGlsl { file } => {
@@ -156,6 +172,7 @@ fn main() -> Result<()> {
             osc::spawn(port, params.clone())?;
             let title = format!("vlfo - {}", shader.file_name().unwrap_or_default().to_string_lossy());
             let settings = window::Settings {
+                path: shader.clone(),
                 window: parse_size(&size)?,
                 output: output.as_deref().map(parse_size).transpose()?,
                 ndi,
@@ -178,7 +195,18 @@ fn main() -> Result<()> {
             let start = std::time::Instant::now();
             let dt = 1.0 / fps;
             let mut n: u64 = 0;
+            let mut watch = hot::Watch::new(&shader);
             loop {
+                if watch.changed() {
+                    match hot::rebuild(&gpu, &shader, offscreen::Offscreen::format(), &params) {
+                        Ok((isf, _layout, pipe)) => {
+                            out.set_pipeline(pipe);
+                            log::info!("reloaded {}", shader.display());
+                            print_inputs(&isf);
+                        }
+                        Err(e) => log::error!("reload failed, keeping the old shader:\n{e:#}"),
+                    }
+                }
                 let due = start + std::time::Duration::from_secs_f64(n as f64 * dt as f64);
                 if let Some(wait) = due.checked_duration_since(std::time::Instant::now()) {
                     std::thread::sleep(wait);

@@ -13,12 +13,15 @@ use winit::keyboard::{Key, NamedKey};
 use winit::window::{Window, WindowId};
 
 use crate::gpu::{self, Blit, Gpu, IsfPipeline};
+use crate::hot::{self, Watch};
 use crate::isf::{Isf, Layout};
 use crate::offscreen::Offscreen;
 use crate::output::Output;
 use crate::params::Params;
 
 pub struct Settings {
+    /// Shader file, watched for changes (hot reload).
+    pub path: std::path::PathBuf,
     pub window: (u32, u32),
     /// Output (render) resolution; None = follow the window's pixel size.
     pub output: Option<(u32, u32)>,
@@ -36,6 +39,7 @@ struct Live {
     blit: Blit,
     start: Instant,
     last: Instant,
+    watch: Watch,
 }
 
 pub struct App {
@@ -91,11 +95,24 @@ impl App {
         blit.set_source(&gpu, &output.target.view);
         log::info!("window {}x{} {:?}, output {ow}x{oh}", config.width, config.height, format);
         let now = Instant::now();
-        Ok(Live { window, surface, config, gpu, output, blit, start: now, last: now })
+        let watch = Watch::new(&self.settings.path);
+        Ok(Live { window, surface, config, gpu, output, blit, start: now, last: now, watch })
     }
 
     fn redraw(&mut self) -> Result<()> {
         let Some(live) = self.live.as_mut() else { return Ok(()) };
+        if live.watch.changed() {
+            match hot::rebuild(&live.gpu, live.watch.path(), Offscreen::format(), &self.params) {
+                Ok((isf, layout, pipe)) => {
+                    live.output.set_pipeline(pipe);
+                    self.isf = isf;
+                    self.layout = layout;
+                    log::info!("reloaded {}", live.watch.path().display());
+                    crate::print_inputs(&self.isf);
+                }
+                Err(e) => log::error!("reload failed, keeping the old shader:\n{e:#}"),
+            }
+        }
         let now = Instant::now();
         let t = (now - live.start).as_secs_f32();
         let dt = (now - live.last).as_secs_f32();
