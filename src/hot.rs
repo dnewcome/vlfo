@@ -54,8 +54,8 @@ pub fn rebuild(
     format: wgpu::TextureFormat,
     params: &Arc<Mutex<Params>>,
 ) -> Result<(Isf, Layout, IsfPipeline)> {
-    let src = std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
-    let isf = isf::parse(&src)?;
+    let src = crate::graph::load_isf_source(path)?;
+    let isf = isf::parse(&src).with_context(|| format!("parse {}", path.display()))?;
     let layout = isf::layout(&isf);
     let pipe = IsfPipeline::new(gpu, &isf, &layout, format)?;
     {

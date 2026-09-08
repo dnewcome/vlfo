@@ -1,4 +1,5 @@
 mod gpu;
+mod graph;
 mod hot;
 mod isf;
 mod ndi;
@@ -112,6 +113,10 @@ enum Cmd {
     },
     /// Run a raw GLSL 450 fragment shader through naga (debugging aid).
     TranslateGlsl { file: PathBuf },
+    /// Compile a .vlfo node graph and print the generated ISF shader.
+    Compile { graph: PathBuf },
+    /// List the node types available in .vlfo graphs.
+    Nodes,
 }
 
 fn parse_size(s: &str) -> Result<(u32, u32)> {
@@ -120,7 +125,7 @@ fn parse_size(s: &str) -> Result<(u32, u32)> {
 }
 
 fn load(path: &PathBuf) -> Result<isf::Isf> {
-    let src = std::fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
+    let src = graph::load_isf_source(path)?;
     isf::parse(&src).with_context(|| format!("parse {}", path.display()))
 }
 
@@ -157,6 +162,8 @@ fn main() -> Result<()> {
             }
         }
         Cmd::Check { files, wgsl, glsl } => check(&files, wgsl, glsl)?,
+        Cmd::Compile { graph } => print!("{}", graph::load_isf_source(&graph)?),
+        Cmd::Nodes => print!("{}", graph::node_help()),
         Cmd::TranslateGlsl { file } => {
             let src = std::fs::read_to_string(&file)?;
             match gpu::translate(&src) {

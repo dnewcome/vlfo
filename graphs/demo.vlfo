@@ -1,0 +1,9 @@
+# a few nodes at once: background, a ring of squares, a spinning line
+bg    = fill | hsv 0.6 0.5 0.15
+ring  = rotate TIME*20 | translate 2.5 0 | rotate 45 | square 0.4 | hsv TIME*0.1 0.8 1
+ring2 = rotate TIME*20+90 | translate 2.5 0 | rotate 45 | square 0.4 | hsv TIME*0.1+0.25 0.8 1
+ring3 = rotate TIME*20+180 | translate 2.5 0 | rotate 45 | square 0.4 | hsv TIME*0.1+0.5 0.8 1
+ring4 = rotate TIME*20+270 | translate 2.5 0 | rotate 45 | square 0.4 | hsv TIME*0.1+0.75 0.8 1
+dots  = repeat 1 1 | circle 0.08 | gray 0.35
+hub   = circle 0.6 | outline 0.08 | gray 1
+sweep = rotate TIME*-60 | line 3.5 0 0.04 | gray 0.9

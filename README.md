@@ -41,6 +41,33 @@ Shaders reload live: `run` and `serve` watch the shader file and rebuild it on s
 keeping the current input values. A shader that fails to compile is reported and the
 previous one keeps running.
 
+## Node graphs (.vlfo)
+
+Shaders can be built from nodes instead of written. A `.vlfo` file is a list of
+chains, one per line, GEM-style:
+
+    in spread 60 0 400                 # declared input: name default min max
+    a = translate -3 0 | grid 5 6 spread*0.01 1 | rect 0.3 0.1 | gray 0.5
+    b = rotate TIME*20 | translate 2.5 0 | square 0.4 | hsv TIME*0.1 0.8 1
+
+Transform nodes move the sample point (translate, rotate, scale, grid, repeat, mirror),
+one shape node gives the distance field (rect, square, circle, ring, line, fill), paint
+nodes set colour and alpha (color, gray, hsv, alpha, outline, soften, invert). Chains are
+composited in file order. Coordinates are GEM world units: 8 tall, 8 x aspect wide,
+centred, y up, so numbers from old scenes carry over.
+
+Every numeric literal in a chain becomes an input named `<chain>_<node>_<param>`, so it
+is a knob over OSC and in the generated Pd panel without declaring anything. Any argument
+that is not a plain number is a GLSL expression, inlined as written; it may use declared
+inputs, `TIME`, and GLSL math. Parameters can also be given by name: `rect h=0.1`.
+
+    vlfo nodes                       # the node reference
+    vlfo compile graphs/squares.vlfo # read the generated ISF shader
+    make live SHADER=graphs/squares.vlfo
+
+Graphs go through the same path as ISF files everywhere: `run`, `serve`, `render`,
+`inputs --pd`, `check`, and hot reload on save.
+
 ## Porting GEM / glfo scenes
 
 The Pd side of a scene stays in Pd; only the drawing becomes an ISF shader.
