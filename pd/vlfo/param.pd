@@ -1,0 +1,9 @@
+#N canvas 200 200 420 220 10;
+#X obj 20 30 inlet;
+#X obj 20 90 oscformat vlfo \$1;
+#X obj 20 140 s vlfo-osc;
+#X text 90 30 [vlfo/param name];
+#X text 90 48 float or list in -> OSC /vlfo/name out \, via [vlfo/send];
+#X text 90 66 drop-in for glfo/param: same place in the patch \, the value goes to the shader instead of a GEM object;
+#X connect 0 0 1 0;
+#X connect 1 0 2 0;

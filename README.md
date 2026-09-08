@@ -30,6 +30,18 @@ Every ISF input is reachable as `/vlfo/<NAME>` with floats (or ints/bools). Colo
 Rendering is deterministic: logical time is `frame / fps`, so a 4800x7200 render is
 just slower, never sped up.
 
+## Porting GEM / glfo scenes
+
+The Pd side of a scene stays in Pd; only the drawing becomes an ISF shader.
+`pd/vlfo/param.pd` is a drop-in for `glfo/param`: `[vlfo/param spread]` sends
+`/vlfo/spread`. One `[vlfo/send 9000]` per patch does the network. `pd/squares.pd` +
+`shaders/squares.fs` is the worked example, ported from blitbomb's `scenes/squares.pd`:
+
+    make live SHADER=shaders/squares.fs PATCH=pd/squares.pd
+
+GEM world units as seen through a glfo card are 8 units tall and 8 x aspect wide,
+centred; the shader maps `isf_FragNormCoord` to that so the original numbers carry over.
+
 ## NDI
 
 Needs the NDI runtime (`libndi.so.6`, from the NDI SDK) on the machine; it is loaded at

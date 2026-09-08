@@ -2,17 +2,20 @@
 #
 #   make            build (release)
 #   make run        live window with the test shader, OSC on udp 9000
-#   make pd         start the Pd LFO sender (pd/lfo-test.pd), headless
+#   make pd         open the Pd control patch (PATCH, default pd/lfo-test.pd)
 #   make live       pd + run together; Ctrl-C stops both
+#                   e.g. make live SHADER=shaders/squares.fs PATCH=pd/squares.pd
 #   make render     headless PNG sequence -> out/render
 #   make check      naga translation report over the ISF corpus
 #   make inputs     list the shader's inputs and OSC addresses
 #
-# Variables: SHADER, SIZE, PORT, FRAMES, FPS, OUT
+# Variables: SHADER, PATCH, PDFLAGS, SIZE, PORT, FRAMES, FPS, OUT
 #   make run SHADER=shaders/isf-files/Angular.fs SIZE=1920x1080
 #   make render SIZE=4800x7200 FRAMES=300 OUT=out/big
 
 SHADER ?= shaders/vlfo-test.fs
+PATCH  ?= pd/lfo-test.pd
+PDFLAGS ?= -noaudio
 SIZE   ?= 1280x720
 PORT   ?= 9000
 FRAMES ?= 90
@@ -32,12 +35,12 @@ run: build
 	$(BIN) run $(SHADER) --size $(SIZE) --port $(PORT)
 
 pd:
-	cd pd && $(PD) -nogui -noaudio lfo-test.pd
+	$(PD) $(PDFLAGS) -path pd $(PATCH)
 
 live: build
 	@trap 'kill 0' INT TERM EXIT; \
-	(cd pd && $(PD) -nogui -noaudio lfo-test.pd) & \
-	$(BIN) run $(SHADER) --size $(SIZE) --port $(PORT)
+	$(BIN) run $(SHADER) --size $(SIZE) --port $(PORT) & \
+	sleep 1; $(PD) $(PDFLAGS) -path pd $(PATCH)
 
 render: build
 	$(BIN) render $(SHADER) -o $(OUT) --frames $(FRAMES) --fps $(FPS) --size $(SIZE)
