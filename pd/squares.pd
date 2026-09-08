@@ -1,4 +1,4 @@
-#N canvas 100 100 580 290 10;
+#N canvas 100 100 1180 600 10;
 #X text 12 6 squares - control side of blitbomb scenes/squares.pd;
 #X text 12 20 the drawing is shaders/squares.fs \, the motion is still here;
 #X text 12 34 make live SHADER=shaders/squares.fs PATCH=pd/squares.pd;
