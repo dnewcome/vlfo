@@ -16,6 +16,7 @@
 SHADER ?= shaders/vlfo-test.fs
 PATCH  ?= pd/lfo-test.pd
 PDFLAGS ?= -noaudio
+PDOPEN  = -open $(PATCH)
 SIZE   ?= 1280x720
 PORT   ?= 9000
 FRAMES ?= 90
@@ -35,11 +36,11 @@ run: build
 	$(BIN) run $(SHADER) --size $(SIZE) --port $(PORT)
 
 pd:
-	$(PD) $(PDFLAGS) -path pd $(PATCH)
+	$(PD) $(PDFLAGS) -path pd $(PDOPEN)
 
 live: build
 	@$(BIN) run $(SHADER) --size $(SIZE) --port $(PORT) & V=$$!; \
-	sleep 1; $(PD) $(PDFLAGS) -path pd $(PATCH) & P=$$!; \
+	sleep 1; $(PD) $(PDFLAGS) -path pd $(PDOPEN) & P=$$!; \
 	trap 'kill $$V $$P 2>/dev/null; wait $$V $$P 2>/dev/null' INT TERM EXIT; \
 	while kill -0 $$V 2>/dev/null && kill -0 $$P 2>/dev/null; do sleep 0.5; done
 
